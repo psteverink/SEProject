@@ -1,0 +1,26 @@
+plugins {
+    id 'application'
+    id 'idea' // optional (to generate IntelliJ IDEA project files)
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClass = 'frontend.lex.Main'
+}
+
+dependencies {
+    testImplementation(platform('org.junit:junit-bom:5.10.2'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation("org.mockito:mockito-core:3.+")
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
