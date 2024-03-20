@@ -10,7 +10,7 @@ import java.util.List;
  * line indicator and extracts code from the remaining line.
  *
  * @author Giulia Pais
- * @version 1.0, 2023-03-05
+ * @version 1.1, 2023-03-20
  */
 public class PreProcessor {
     /* File format */
@@ -24,17 +24,21 @@ public class PreProcessor {
     /* Columns 12-72 -> Area B (statements) */
     static final int[] B_AREA = {11, 72};
     /* From 72 to 80 indicator area */
-    private ArrayList<String> fullText;
-    private List<Line> preProcessedLines;
-    private HashMap<Integer, List<LineIssue>> lineIssues;
+    private final ArrayList<String> fullText;
+    private final ArrayList<Line> preProcessedLines;
+    private final HashMap<Integer, List<LineIssue>> lineIssues;
     private int lineCounter = 0;
 
     public PreProcessor(List<String> fullText) {
         this.fullText = new ArrayList<>(fullText);
         this.lineIssues = new HashMap<>();
+        this.preProcessedLines = new ArrayList<>(fullText.size());
     }
 
     public void preProcess() {
+        this.lineCounter = 0;
+        this.preProcessedLines.clear();
+        this.lineIssues.clear();
         trimLines();
         for (String line: fullText) {
             Line newLine = new Line(line, lineCounter);
@@ -52,11 +56,11 @@ public class PreProcessor {
      * Removes empty lines at the beginning and end of the file
      */
     private void trimLines() {
-        while (fullText.get(0).isBlank()) {
-            fullText.remove(0);
+        while (fullText.getFirst().isBlank()) {
+            fullText.removeFirst();
         }
-        while (fullText.get(fullText.size() - 1).isBlank()) {
-            fullText.remove(fullText.size() - 1);
+        while (fullText.getLast().isBlank()) {
+            fullText.removeLast();
         }
     }
 
@@ -69,7 +73,7 @@ public class PreProcessor {
      * @param newLine - new line created in preProcess()
      */
     private void processLineNo(String originalLine, Line newLine) {
-        String firstCols = originalLine.substring(COLNUMS[0], COLNUMS[1]);
+        String firstCols = originalLine.substring(COLNUMS[0], Math.min(COLNUMS[1], originalLine.length()));
         if (firstCols.isBlank()) {
             // Line numbers can be empty
             return;
@@ -95,6 +99,9 @@ public class PreProcessor {
      * @param newLine - new line created in preProcess()
      */
     private void checkStatus(String originalLine, Line newLine) {
+        if (originalLine.length() < INDICATOR_COL + 1) {
+            return;
+        }
         String statusCol = Character.toString(originalLine.charAt(INDICATOR_COL));
         if (!statusCol.isBlank() && !(statusCol.equals("*") || statusCol.equals("-"))) {
             LineIssue issue = new LineIssue(
@@ -125,7 +132,10 @@ public class PreProcessor {
      * @param newLine - new line created in preProcess()
      */
     private void extractCode(String originalLine, Line newLine) {
-        String codePortion = originalLine.substring(A_AREA[0], B_AREA[1]);
+        if (originalLine.length() < A_AREA[0] + 1) {
+            return;
+        }
+        String codePortion = originalLine.substring(A_AREA[0], Math.min(B_AREA[1], originalLine.length()));
         if (codePortion.isBlank()) {
             return;
         }
@@ -140,4 +150,27 @@ public class PreProcessor {
         newLine.setCodeLine(codePortion.trim());
     }
 
+    public ArrayList<String> getFullText() {
+        return fullText;
+    }
+
+    public ArrayList<Line> getPreProcessedLines() {
+        return preProcessedLines;
+    }
+
+    public HashMap<Integer, List<LineIssue>> getLineIssues() {
+        return lineIssues;
+    }
+
+    public int getLineCounter() {
+        return lineCounter;
+    }
+
+    public String getCodeLine(int lineNumber) {
+        return preProcessedLines.get(lineNumber).getCodeLine();
+    }
+
+    public Line getLine(int lineNumber) {
+        return preProcessedLines.get(lineNumber);
+    }
 }

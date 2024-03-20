@@ -1,4 +1,10 @@
 package frontend.lex;
 
 public enum TokenType {
+    EOF,
+    DOT, COMMA,
+    IDENTIFICATION_DIVISION, DATA_DIVISION, PROCEDURE_DIVISION,
+    KEYWORD, OPTION,
+    IDENTIFIER,
+    STRING_LITERAL, NUMBER_LITERAL,
 }

@@ -1,7 +1,15 @@
 package frontend.lex;
 
-import java.util.Arrays;
+import java.util.*;
+import java.util.regex.Pattern;
 
+/**
+ * A trie structure for keywords that can be traversed one character at time during scanning.
+ * Can also check and return if a given keyword is a division or an option clause.
+ *
+ * @author Giulia Pais
+ * @version 1.0, 2023-03-20
+ */
 public class KeywordTrie {
 
     private static KeywordTrie instance;
@@ -10,18 +18,34 @@ public class KeywordTrie {
     private int minDepth = Integer.MAX_VALUE;
     private int maxDepth = 0;
 
-    private static final String[] keywords = {
-            // division names
-            "IDENTIFICATIONDIVISION", "DATADIVISION", "PROCEDUREDIVISION",
-            // reserved words
-            "DISPLAY", "STOP", "ADD"
-            // TODO: add more keywords
-    };
+    private static final Pattern idDivPattern = Pattern.compile("IDENTIFICATION\s*DIVISION");
+    private static final Pattern dataDivPattern = Pattern.compile("DATA\s*DIVISION");
+    private static final Pattern procDivPattern = Pattern.compile("PROCEDURE\s*DIVISION");
+
+    private static final Set<String> options = new HashSet<>(
+            Arrays.asList(
+                 "TO", "BY", "DELIMITEDBY", "WITHNOADVANCING"
+            )
+    );
+
+    private static final Set<String> reservedWords = new HashSet<>(
+            Arrays.asList(
+                "DISPLAY", "STOP", "ADD"
+            )
+    );
+
+    private static final List<String> keywords = new ArrayList<>();
 
     private KeywordTrie() {
         this.root = new TrieNode(' ');
         this.pointer = this.root;
-        Arrays.sort(keywords);
+        // Init keywords
+        keywords.add("IDENTIFICATIONDIVISION");
+        keywords.add("DATADIVISION");
+        keywords.add("PROCEDUREDIVISION");
+        keywords.addAll(reservedWords);
+        keywords.addAll(options);
+        keywords.sort(Comparator.naturalOrder());
         for (String keyword : keywords) {
             insertKeyword(keyword);
         }
@@ -84,5 +108,20 @@ public class KeywordTrie {
         return pointer == root;
     }
 
+    public static String getDivision(String keyword) {
+        if (idDivPattern.matcher(keyword).matches()) {
+            return "IDENTIFICATION_DIVISION";
+        }
+        if (dataDivPattern.matcher(keyword).matches()) {
+            return "DATA_DIVISION";
+        }
+        if (procDivPattern.matcher(keyword).matches()) {
+            return "PROCEDURE_DIVISION";
+        }
+        return null;
+    }
 
+    public static boolean isOption(String keyword) {
+        return options.contains(keyword.replaceAll("\\s", ""));
+    }
 }

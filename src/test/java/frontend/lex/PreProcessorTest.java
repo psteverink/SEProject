@@ -43,7 +43,6 @@ class PreProcessorTest {
     @Test
     void testTrimLines() throws IllegalAccessException, InvocationTargetException {
         Method trimLinesMethod = getPrivateMethod("trimLines");
-        Field fullTextField = getPrivateField("fullText");
 
         String testText = "\n" +
                 "    \n" +
@@ -54,20 +53,18 @@ class PreProcessorTest {
         PreProcessor preProcessor = new PreProcessor(testTextLines);
 
         // Before trimming
-        @SuppressWarnings("unchecked")
-        List<String> fullTextContent = (List<String>) fullTextField.get(preProcessor);
+        List<String> fullTextContent = preProcessor.getFullText();
         assertEquals(5, fullTextContent.size());
 
         // After trimming
         trimLinesMethod.invoke(preProcessor);
-        fullTextContent = (List<String>) fullTextField.get(preProcessor);
+        fullTextContent = preProcessor.getFullText();
         assertEquals(2, fullTextContent.size());
     }
 
     @Test
     void testProcessLineNo() throws InvocationTargetException, IllegalAccessException {
         Method processLineNoMethod = getPrivateMethod("processLineNo");
-        Field lineIssuesField = getPrivateField("lineIssues");
         Line mockLine = mock(Line.class);
         ArrayList<String> testText = new ArrayList<>();
         testText.add("test");
@@ -85,9 +82,7 @@ class PreProcessorTest {
         processLineNoMethod.invoke(preProcessor, testString2, mockLine);
         verify(mockLine, times(1)).setGivenLineNo(stringArgumentCaptor.capture());
         assertEquals("0001", stringArgumentCaptor.getValue());
-        @SuppressWarnings("unchecked")
-        HashMap<Integer, List<LineIssue>> lineIssues =
-                (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        HashMap<Integer, List<LineIssue>> lineIssues = preProcessor.getLineIssues();
         assertEquals(0, lineIssues.size());
         Mockito.reset(mockLine);
 
@@ -95,14 +90,13 @@ class PreProcessorTest {
         String testString3 = "0A01   SOME CODE";
         processLineNoMethod.invoke(preProcessor, testString3, mockLine);
         verify(mockLine, times(0)).setGivenLineNo(anyString());
-        lineIssues = (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        lineIssues = preProcessor.getLineIssues();
         assertEquals(1, lineIssues.size());
     }
 
     @Test
     void testCheckStatus() throws InvocationTargetException, IllegalAccessException {
         Method checkStatusMethod = getPrivateMethod("checkStatus");
-        Field lineIssuesField = getPrivateField("lineIssues");
         Line mockLine = mock(Line.class);
         ArrayList<String> testText = new ArrayList<>();
         testText.add("test");
@@ -113,9 +107,7 @@ class PreProcessorTest {
         checkStatusMethod.invoke(preProcessor, testString1, mockLine);
         verify(mockLine, times(0)).setComment(anyBoolean());
         verify(mockLine, times(0)).setContinuation(anyBoolean());
-        @SuppressWarnings("unchecked")
-        HashMap<Integer, List<LineIssue>> lineIssues1 =
-                (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        HashMap<Integer, List<LineIssue>> lineIssues1 = preProcessor.getLineIssues();
         assertEquals(0, lineIssues1.size());
         Mockito.reset(mockLine);
 
@@ -124,9 +116,7 @@ class PreProcessorTest {
         checkStatusMethod.invoke(preProcessor, testString2, mockLine);
         verify(mockLine, times(1)).setComment(true);
         verify(mockLine, times(0)).setContinuation(anyBoolean());
-        @SuppressWarnings("unchecked")
-        HashMap<Integer, List<LineIssue>> lineIssues2 =
-                (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        HashMap<Integer, List<LineIssue>> lineIssues2 = preProcessor.getLineIssues();
         assertEquals(0, lineIssues2.size());
         Mockito.reset(mockLine);
 
@@ -136,9 +126,7 @@ class PreProcessorTest {
         checkStatusMethod.invoke(preProcessor, testString3, mockLine);
         verify(mockLine, times(0)).setComment(anyBoolean());
         verify(mockLine, times(1)).setContinuation(true);
-        @SuppressWarnings("unchecked")
-        HashMap<Integer, List<LineIssue>> lineIssues3 =
-                (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        HashMap<Integer, List<LineIssue>> lineIssues3 = preProcessor.getLineIssues();
         assertEquals(0, lineIssues3.size());
         Mockito.reset(mockLine);
 
@@ -147,9 +135,7 @@ class PreProcessorTest {
         checkStatusMethod.invoke(preProcessor, testString4, mockLine);
         verify(mockLine, times(0)).setComment(anyBoolean());
         verify(mockLine, times(0)).setContinuation(anyBoolean());
-        @SuppressWarnings("unchecked")
-        HashMap<Integer, List<LineIssue>> lineIssues4 =
-                (HashMap<Integer, List<LineIssue>>) lineIssuesField.get(preProcessor);
+        HashMap<Integer, List<LineIssue>> lineIssues4 = preProcessor.getLineIssues();
         assertEquals(1, lineIssues4.size());
     }
 
@@ -181,6 +167,28 @@ class PreProcessorTest {
         verify(mockLine, times(1)).setCodeStart(PreProcessor.A_AREA[0] + 3);
         verify(mockLine, times(1)).setCodeLine("SOME CODE");
         Mockito.reset(mockLine);
+    }
+
+    @Test
+    void testPreProcess() {
+        String testText = "\n" +
+                "    \n" +
+                "000001*SOME CODE\n" +
+                "ABCDE\n" + // Gives Line issue
+                "  01 \n" +
+                "000001@SOME CODE\n" + // Gives Line issue
+                "000002            \n" + // No issues, just empty line
+                "\t\t \n";
+        List<String> testTextLines = Arrays.asList(testText.split("\n"));
+        PreProcessor preProcessor = new PreProcessor(testTextLines);
+
+        preProcessor.preProcess();
+
+        assertEquals(5, preProcessor.getPreProcessedLines().size());
+        assertEquals(2, preProcessor.getLineIssues().size());
+        assertTrue(preProcessor.getPreProcessedLines().get(2).isBlank());
+        assertTrue(preProcessor.getPreProcessedLines().get(4).isBlank());
+        assertTrue(preProcessor.getPreProcessedLines().get(0).isComment());
     }
 
 }

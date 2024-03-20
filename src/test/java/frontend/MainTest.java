@@ -1,5 +1,4 @@
-package frontend.lex;
-
+package frontend;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
