@@ -7,4 +7,6 @@ public enum TokenType {
     KEYWORD, OPTION,
     IDENTIFIER,
     STRING_LITERAL, NUMBER_LITERAL,
+
+    PLUS,MINUS
 }
