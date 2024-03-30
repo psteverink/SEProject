@@ -1,5 +1,8 @@
 package frontend;
 
+import frontend.lex.Token;
+import frontend.lex.TokenType;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -41,4 +44,5 @@ public class Main {
         List<String> fullText = readFile(path);
         // TODO: pass to scanner
     }
+
 }

@@ -7,6 +7,7 @@ import frontend.lex.TokenType;
 import java.util.List;
 
 public class Parser {
+    private static class ParseError extends RuntimeException {}
     private final StatefulLexer statefulLexer;
     private Token currentToken;
 
@@ -85,6 +86,7 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+        throw error(peek(), "Expect expression.");
     }
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
@@ -95,6 +97,11 @@ public class Parser {
         }
 
         return false;
+    }
+    private Token consume(TokenType type, String message) {
+        if (check(type)) return advance();
+
+        throw error(peek(), message);
     }
     private boolean check(TokenType type) {
         if (isAtEnd()) return false;
@@ -115,6 +122,31 @@ public class Parser {
 
     private Token previous() {
         return tokens.get(current - 1);
+    }
+    private ParseError error(Token token, String message) {
+        frontend.Main.error(token, message);
+        return new ParseError();
+    }
+    private void synchronize() {
+        advance();
+
+        while (!isAtEnd()) {
+            if (previous().getType() == SEMICOLON) return;
+
+            switch (peek().getType()) {
+                case CLASS:
+                case FUN:
+                case VAR:
+                case FOR:
+                case IF:
+                case WHILE:
+                case PRINT:
+                case RETURN:
+                    return;
+            }
+
+            advance();
+        }
     }
     public Expr parse() {
         try {
