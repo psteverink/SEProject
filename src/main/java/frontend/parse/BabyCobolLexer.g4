@@ -1,4 +1,4 @@
-lexer grammar Lexer;
+lexer grammar BabyCobolLexer;
 
 
 IDENTIFICATIONDIVISION:'IDENTIFICATION DIVISION';
@@ -21,6 +21,8 @@ VALUE:'VALUE';
 ACCEPT:'ACCEPT';
 ADD:'ADD';
 TO:'TO';
+OF: 'OF';
+RETURNING: 'RETURNING';
 GIVING:'GIVING';
 ALTER:'ALTER';
 PROCEED :'PROCEED';
@@ -73,17 +75,21 @@ TRUE: 'TRUE';
 FALSE: 'FALSE';
 
 
-
 COMMENT : '*' ~[\r\n]* -> skip ;
 NEWLINE : [\r\n]+ -> skip;
-INT     : [0-9]+ ;
+SKIPWHITESPACE: ' ' ->skip;
 IDENTIFIER : [a-zA-Z_][a-zA-Z_0-9]+;
+INT     : [0-9]+ ;
 EQ : '=' ;
 COMMA : ',' ;
 SEMI : ';' ;
 LPAREN : '(' ;
 RPAREN : ')' ;
 LCURLY : '{' ;
+GREATER: '>';
+SMALLER: '<';
+QUOTES: '"';
+NOT: '!';
 STAR: '*';
 SLASH: '/';
 PLUS: '+';
