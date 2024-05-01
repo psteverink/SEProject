@@ -3,117 +3,138 @@ options{
 tokenVocab = BabyCobolLexer;
 }
 
-program:	 identificationdivision datadivision? proceduredivision? EOF ;
+
+program:	identificationdivision datadivision? proceduredivision? EOF ;
 
 
-identificationdivision: 'IDENTIFICATION DIVISION' '.'?  (identificationname '.' identificationvalue)* '.'?;
-identificationname: 'PROGRAM-ID'|'AUTHOR'|'INSTALLATION'|'DATE-WRITTEN'|'DATE-COMPILED'|'SECURITY';
-identificationvalue: IDENTIFIER;
-
-
-
-datadivision: 'DATA DIVISION' '.'  dataDescriptionEntry+;
-dataDescriptionEntry: level IDENTIFIER('LIKE' IDENTIFIER | 'PICTURE IS' REPRESENTATION) '.';
-level: INT;
+identificationdivision:IDENTIFICATIONDIVISION (identificationname IDDOT identificationvalue IDDOT (IDNEWLINE IDCOLUMNS)?)+ ;
+identificationname: NAME;
+identificationvalue: NAME;
 
 
 
-proceduredivision: 'PROCEDURE DIVISION''.' using? sentence* paragraph*;
+datadivision:DATADIVISION (dataDescriptionEntry (DATANEWLINE DATACOLUMNS)?)+;
+dataDescriptionEntry: level identifier(DATALIKE identifier | DATAPICTUREIS DATAREPRESENTATION)? (DATAOCCURS int DATATIMES)? DATADOT;
+level: DATALEVEL;
+dataidentifier: DATAID|keywords;
 
-using: 'USING' ('BY' (('REFERENCE' IDENTIFIER)|('CONTENT' atomic)|('VALUE' atomic)))+;
-sentence: statement '.'?;
+
+
+
+
+proceduredivision:
+IDPROCEDUREDIVISION (using PRODNEWLINE)? (PROCEDURECOLUMNS sentence)* ( PARAGRAPHCOLUMNS paragraph)*
+|DATAPROCEDUREDIVISION (using PRODNEWLINE)? (PROCEDURECOLUMNS sentence)* ( PARAGRAPHCOLUMNS paragraph)*
+;
+
+using: COMMANDCOLUMNS USING (BY ((REFERENCE identifier)|(CONTENT atomic)|(VALUE atomic)))+;
+
+
+
+sentence: statement+ DOT? PRODNEWLINE?;
 statement: accept| add | alter | call | copy | display | divide | evaluate | goto | if | loop |
             move | multiply | nextsentence | perform | signal | stop | subtract;
-paragraph: IDENTIFIER '.' sentence+;
-
-
-//
-//(LEVEL IDENTIFIER (('LIKE' IDENTIFIER)|('PICTURE IS' REPRESENTATION))? ('OCCURS' INT 'TIMES')? )+;
-//STATEMENTS:
+paragraph: identifier DOT PRODNEWLINE (PROCEDURECOLUMNS sentence)+ PRODNEWLINE?;
 
 
 
-accept: 'ACCEPT' IDENTIFIER+;
 
 
-add: 'ADD' atomic 'TO' atomic ('GIVING' IDENTIFIER)*;
+accept: ACCEPT identifier+;
 
 
-alter: 'ALTER' procedurename 'TO''PROCEED''TO' procedurename;
-    procedurename: IDENTIFIER;
-
-call: 'CALL' (callfile|callprogram);
-    callfile: filename ('USING' (byreference|bycontent|byvalue)+)?;
-        byreference: 'BY''REFERENCE' IDENTIFIER;
-        bycontent: 'BY''CONTENT' atomic;
-        byvalue: 'BY''VALUE' atomic;
-        filename: IDENTIFIER;
-
-    callprogram: (functionname 'OF')? programname callprogramusing? callprogramreturning?;
-        callprogramusing: 'USING' ((('BY' 'REFERENCE')|('BY''CONTENT')|('BY''VALUE'))* atomic (('AS''PRIMITIVE')|('AS''STRUCT'))*)+;
-        callprogramreturning: 'RETURNING' (('BY''REFERENCE')|('BY''CONTENT')|('BY''VALUE'))* IDENTIFIER (('AS''PRIMITIVE')|('AS''STRUCT'))*;
-        functionname: IDENTIFIER;
-        programname: IDENTIFIER;
-
-copy: 'COPY' filename ('REPLACING' (stringliteral 'BY' stringliteral)+)?;
-
-display: 'DISPLAY' ( atomic   )+ ('WITH''NO''ADVANCING')?;
+add: ADD atomic+ TO atomic (GIVING identifier)*;
 
 
-divide: 'DIVIDE' atomic 'INTO' atomic+ ('GIVING' IDENTIFIER+ ('REMAINDER' IDENTIFIER)?)?;
+alter: ALTER procedurename TO PROCEED TO procedurename;
+    procedurename: identifier;
+
+call: CALL (callfile|callprogram);
+    callfile: filename (USING (byreference|bycontent|byvalue)+)?;
+        byreference: BY REFERENCE identifier;
+        bycontent: BY CONTENT atomic;
+        byvalue: BY VALUE atomic;
+        filename: identifier;
+
+    callprogram: (functionname OF)? programname callprogramusing? callprogramreturning?;
+        callprogramusing: USING (((BY REFERENCE)|(BY CONTENT)|(BY VALUE))* atomic ((AS PRIMITIVE)|(AS STRUCT))*)+;
+        callprogramreturning: RETURNING ((BY REFERENCE)|(BY CONTENT)|(BY VALUE))* identifier ((AS PRIMITIVE)|(AS STRUCT))*;
+        functionname: identifier;
+        programname: identifier;
+
+copy: COPY filename (REPLACING (stringliteral BY stringliteral)+)?;
+
+display: DISPLAY (atomic)+ (WITH NO ADVANCING)?;
 
 
-evaluate: 'EVALUATE' anyexpression ('ALSO' anyexpression)* (whenclause statement+)+;
-    anyexpression:;
-    whenclause: 'WHEN' 'OTHER'|(atomic ('THROUGH' atomic)? ('ALSO' (atomic ('THROUGH' atomic)?)*));
+divide: DIVIDE atomic INTO atomic+ (GIVING identifier+ (REMAINDER identifier)?)?;
 
 
-goto: 'GOTO' procedurename;
+evaluate: EVALUATE boolexpr (ALSO boolexpr)* (whenclause statement+)+;
+    whenclause: WHEN OTHER|(atomic (THROUGH atomic)? (ALSO (atomic (THROUGH atomic)?)*));
 
 
-if: 'IF' boolexpr 'THEN' ((statement+ ('ELSE' statement+)? 'END')|(statement+ ('ELSE' statement+)?));
+goto: GOTO procedurename;
 
 
-loop: 'LOOP' (loopvarying| loopwhile| loopuntil| statement)* 'END';
-    loopvarying: 'VARYING' IDENTIFIER? ('FROM' atomic)?('TO' atomic)?('BY' atomic)?;
-    loopwhile: 'WHILE' boolexpr;
-    loopuntil: 'UNTIL' boolexpr;
+perform: PERFORM procedurename (THROUGH procedurename)? (atomic TIMES)?;
 
 
-move: 'MOVE' (atomic|'HIGH-VALUES'|'LOW-VALUES'|'SPACES') 'TO' IDENTIFIER+;
+if
+:IF boolexpr PRODNEWLINE PROCEDURECOLUMNS THEN (statement PRODNEWLINE PROCEDURECOLUMNS)+ (ELSE (statement PRODNEWLINE PROCEDURECOLUMNS)+) END
+|IF boolexpr PRODNEWLINE PROCEDURECOLUMNS THEN statement (PRODNEWLINE PROCEDURECOLUMNS ELSE statement)? DOT?
+;
 
 
-multiply: 'MULTIPLY' atomic 'BY' atomic+ ('GIVING' IDENTIFIER)?;
+loop: LOOP (loopvarying| loopwhile| loopuntil| PROCEDURECOLUMNS statement PRODNEWLINE)* PROCEDURECOLUMNS END;
+    loopvarying: VARYING identifier? (FROM atomic)?(TO atomic)?(BY atomic)? PRODNEWLINE?;
+    loopwhile: WHILE boolexpr PRODNEWLINE;
+    loopuntil: UNTIL boolexpr PRODNEWLINE;
 
 
-nextsentence: 'NEXT_SENTENCE';
+move: MOVE (atomic|HIGHVALUES|LOWVALUES|SPACES) TO identifier+;
 
 
-perform: 'PERFORM' procedurename ('THROUGH' procedurename)? (atomic 'TIMES')?;
+multiply: MULTIPLY atomic BY atomic+ (GIVING identifier)?;
 
 
-signal: 'SIGNAL' procedurename|'OFF' 'ON''ERROR';
+nextsentence: NEXTSENTENCE;
 
 
-stop: 'STOP' ;
+
+signal: SIGNAL procedurename|OFF ON ERROR;
 
 
-subtract: 'SUBTRACT' atomic 'FROM' atomic ('GIVING' IDENTIFIER)*;
+stop: STOP ;
 
 
-atomic: IDENTIFIER| stringliteral| INT;
-    stringliteral: '"' IDENTIFIER? '"';
+subtract: SUBTRACT atomic FROM atomic (GIVING identifier)*;
+
+
+atomic: identifier
+| stringliteral
+| int
+;
+    stringliteral: STRINGLITERAL|PROCSTRINGLITERAL;
+
 boolexpr: equality;
-equality: comparison (('='|'!''=') comparison)*;
+equality: comparison (('=' |'!''=') comparison)*;
 comparison: term (('>'|'<') term)*;
-term: '!' term | primary;
-primary: atomic | 'TRUE'| 'FALSE' | '(' boolexpr ')';
+term: factor (('-'|'+') factor)*;
+factor : unary (('*'|'/') unary)*;
+unary: (('!'|'-') unary) | primary;
+primary: atomic | TRUE| FALSE | '(' boolexpr ')';
 
-//TOKENS:
+//KEYWORDS:
+keywords:IDENTIFICATIONDIVISION|OCCURS|DATADIVISION|LIKE|PICTUREIS|IDPROCEDUREDIVISION|USING|BY|REFERENCE|CONTENT|VALUE|ACCEPT|ADD|TO|OF|RETURNING|
+GIVING|ALTER|PROCEED |CALL|PRIMITIVE|STRUCT|AS|COPY|REPLACING|DISPLAY|DELIMITED|SIZE|SPACE|WITH|NO|ADVANCING|
+DIVIDE|INTO|REMAINDER|EVALUATE|ALSO|WHEN|OTHER|THROUGH|GOTO|IF|THEN|ELSE|END|LOOP|VARYING|FROM|WHILE|UNTIL|
+MOVE|HIGHVALUES|LOWVALUES|SPACES|MULTIPLY|NEXTSENTENCE|PERFORM|TIMES|SIGNAL|OFF|ON|ERROR|STOP|SUBTRACT|TRUE|FALSE;
+identifier:
+DATAID (index)?
+|PROCID (index)?
+| keywords
+;
+index: PROCID|DATAID;
+int: (DATAINT|PROCINT);
 
-
-//These are not tokens, they are expressions
-
-
-
-//LEXER RULES:
