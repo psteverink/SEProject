@@ -1,7 +1,12 @@
 package frontend;
 
-import frontend.lex.Token;
-import frontend.lex.TokenType;
+
+import frontend.parse.BabyCobolGrammar;
+import frontend.parse.BabyCobolGrammarBaseListener;
+import frontend.parse.BabyCobolLexer;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +22,7 @@ public class Main {
     static List<String> readFile(Path path) throws IOException {
         if (!Files.exists(path)) {
             System.out.println("File not found: " + path);
-            return null;
+            throw new IOException();
         }
         return Files.readAllLines(path, Charset.defaultCharset());
     }
@@ -41,8 +46,23 @@ public class Main {
                 System.exit(1);
             }
         }
-        List<String> fullText = readFile(path);
-        // TODO: pass to scanner
+        List<String> fullTextList = readFile(path);
+        String fullText = String.join("\n",fullTextList);
+        CharStream charStream = CharStreams.fromString(fullText);
+        BabyCobolLexer lexer = new BabyCobolLexer(charStream);
+        Token token;
+
+/*        while ((token = lexer.nextToken()).getType() != Token.EOF) {
+            System.out.println(token);
+        }*/
+
+        TokenStream tokenStream = new CommonTokenStream(lexer);
+        BabyCobolGrammar parser = new BabyCobolGrammar(tokenStream);
+
+        ParseTree parseTree = parser.program();
+        BabyCobolGrammarBaseListener listener = new BabyCobolGrammarBaseListener();
+        ParseTreeWalker walker = new ParseTreeWalker();
+        walker.walk(listener, parseTree);
     }
 
 }
