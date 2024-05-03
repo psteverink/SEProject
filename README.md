@@ -1,3 +1,5 @@
+# THIS PROJECT IS NOT SUFFICIENT OR COMPLEETE, PLEASE SEE E-MAIL
+
 # README
 
 This is an interpreter for BabyCobol written in Java using ANTLR.
